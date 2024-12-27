@@ -5,6 +5,6 @@ from App.config import DB
 
 load_dotenv(find_dotenv())
 
-engine = create_async_engine(url=DB)
+engine = create_async_engine(url=DB, echo=True)
 
 main_session = async_sessionmaker(bind=engine)
