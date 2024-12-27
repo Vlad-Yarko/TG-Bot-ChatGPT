@@ -25,3 +25,11 @@ class ChatHistory(Base):
     messages: Mapped[str] = mapped_column(Text, server_default="")
 
     user: Mapped['User'] = relationship('User', back_populates='history', lazy='joined')
+
+
+class ChatsHistory(Base):
+    __tablename__ = "chats_history"
+
+    chat_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.tg_id'))
+    messages: Mapped[str] = mapped_column(Text, server_default="")

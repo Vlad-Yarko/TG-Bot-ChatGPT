@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter, Command
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from App.config import client, gpt_model, gpt_model_image
-from App.databases.requests import orm_get_all_chat_history, orm_update_all_chat_history
+from App.databases.requests import orm_get_all_chat_history, orm_update_all_chat_history, orm_update_current_chat_history
 
 
 chat_router = Router()
@@ -43,25 +43,31 @@ async def text_message_gpt(message: Message, state: FSMContext, session: AsyncSe
     tg_id = message.from_user.id
     data = await state.get_data()
     current_messages = data['messages']
+    history = data['history']
+    gpt_chat_id = data['chat_id']
     current_messages.append(user_question)
+    current_chat_messages = history + current_messages
     response = await client.chat.completions.create(
         model=gpt_model,
-        messages=current_messages,
+        messages=current_chat_messages,
         temperature=0.7
     )
     gpt_response = response.choices[0].message.content
     gpt_response_dict = {"role": "system", "content": gpt_response}
     current_messages.append(gpt_response_dict)
-    await state.update_data(messages=current_messages)
+    await state.update_data(messages=current_messages, history=current_chat_messages)
     await orm_update_all_chat_history(session, tg_id, user_question, gpt_response_dict)
+    await orm_update_current_chat_history(session, gpt_chat_id, user_question, gpt_response_dict)
     await message.answer(gpt_response)
 
 
 @chat_router_image.message(F.text, StateFilter('Chat:generate_image'))
 async def generate_image(message: Message, state: FSMContext, session: AsyncSession):
     user_question = message.text
+    data = await state.get_data()
     user_question_dict = {"role": "user", "content": user_question}
     tg_id = message.from_user.id
+    gpt_chat_id = data['chat_id']
     response = await client.images.generate(
         prompt=user_question,
         model=gpt_model_image,
@@ -69,12 +75,13 @@ async def generate_image(message: Message, state: FSMContext, session: AsyncSess
     )
     image_url = response.data[0].url
     gpt_response_dict = {"role": "system", "content": image_url}
-    data = await state.get_data()
     current_messages = data['messages']
+    history = data['history']
     current_messages.append(user_question_dict)
     current_messages.append(gpt_response_dict)
-    await state.update_data(messages=current_messages)
+    await state.update_data(messages=current_messages, history=history + current_messages)
     await orm_update_all_chat_history(session, tg_id, user_question_dict, gpt_response_dict)
+    await orm_update_current_chat_history(session, gpt_chat_id, user_question_dict, gpt_response_dict)
     await message.answer(f"""{image_url}
 """)
     await message.answer('More? or /return')

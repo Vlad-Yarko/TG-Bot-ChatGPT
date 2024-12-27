@@ -7,6 +7,8 @@ load_dotenv(find_dotenv())
 TOKEN=os.getenv('TOKEN')
 DB=os.getenv('DB')
 
+creator = '@TIGeR9999999999999'
+
 
 from g4f.client import AsyncClient
 from g4f.Provider import OpenaiChat
