@@ -33,3 +33,11 @@ class ChatsHistory(Base):
     chat_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.tg_id'))
     messages: Mapped[str] = mapped_column(Text, server_default="")
+
+
+class RecentChat(Base):
+    __tablename__ = "recent_chats"
+
+    recent_chat_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tg_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.tg_id'))
+    messages: Mapped[int] = mapped_column(Text)
